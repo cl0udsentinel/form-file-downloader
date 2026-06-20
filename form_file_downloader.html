@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Form Response File Downloader</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #f4f1eb;
+  --card: #ffffff;
+  --border: #e2ddd5;
+  --accent: #2d6a4f;
+  --accent-light: #e8f4ee;
+  --accent2: #e76f51;
+  --accent2-light: #fdf0ec;
+  --text: #1a1a1a;
+  --muted: #8a8278;
+  --tag-bg: #ede9e2;
+  --shadow: 0 2px 12px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  min-height: 100vh;
+}
+
+/* Layout */
+.app { display: flex; min-height: 100vh; }
+
+/* Sidebar */
+.sidebar {
+  width: 320px; flex-shrink: 0;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: sticky; top: 0; height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-head {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.brand { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
+.brand em { font-style: normal; color: var(--accent); }
+.brand-sub { font-size: 12px; color: var(--muted); margin-top: 2px; font-weight: 400; }
+
+.sidebar-section { padding: 20px 24px; border-bottom: 1px solid var(--border); }
+.section-label {
+  font-size: 10px; font-weight: 600; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+}
+
+/* API Key */
+.input-wrap { position: relative; margin-bottom: 10px; }
+.input-wrap input {
+  width: 100%;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--text);
+  padding: 10px 36px 10px 12px;
+  outline: none; transition: border-color 0.2s;
+}
+.input-wrap input:focus { border-color: var(--accent); }
+.input-wrap input::placeholder { color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 13px; }
+.eye-btn {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer; color: var(--muted); font-size: 14px;
+}
+
+/* Sheet list */
+.sheet-list { display: flex; flex-direction: column; gap: 8px; }
+.sheet-item {
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex; align-items: center; gap: 8px;
+  position: relative;
+}
+.sheet-item input[type="text"] {
+  flex: 1; background: none; border: none; outline: none;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--text);
+}
+.sheet-item input[type="text"]::placeholder { color: var(--muted); font-family: 'Outfit', sans-serif; font-size: 12px; }
+.sheet-num {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.remove-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 16px; line-height: 1;
+  flex-shrink: 0; transition: color 0.15s;
+}
+.remove-btn:hover { color: var(--accent2); }
+
+.add-sheet-btn {
+  width: 100%; padding: 9px;
+  background: var(--accent-light); border: 1.5px dashed var(--accent);
+  border-radius: 8px; color: var(--accent);
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; margin-top: 4px; transition: all 0.15s;
+}
+.add-sheet-btn:hover { background: var(--accent); color: #fff; }
+
+/* Load button */
+.load-btn {
+  margin: 16px 24px;
+  width: calc(100% - 48px);
+  padding: 12px;
+  background: var(--accent);
+  color: #fff; border: none; border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.load-btn:hover { background: #235c42; transform: translateY(-1px); box-shadow: var(--shadow); }
+.load-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Sheet tabs */
+.sheet-tabs {
+  display: flex; gap: 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto; padding: 0 24px;
+  background: var(--card);
+}
+.sheet-tab {
+  padding: 12px 18px; font-size: 13px; font-weight: 500;
+  color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: all 0.15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.sheet-tab:hover { color: var(--text); }
+.sheet-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-badge {
+  background: var(--accent-light); color: var(--accent);
+  font-size: 10px; font-weight: 700;
+  padding: 2px 6px; border-radius: 10px;
+}
+.tab-badge.err { background: #fde8e4; color: var(--accent2); }
+
+/* Main content */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.main-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+}
+
+.content { flex: 1; padding: 24px; overflow-y: auto; }
+
+/* Status bar */
+.status-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  font-size: 12px; color: var(--muted);
+  min-height: 44px;
+}
+.pulse { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.pulse.ok { background: var(--accent); animation: glow 2s ease-in-out infinite; }
+.pulse.err { background: var(--accent2); }
+.pulse.loading { background: #f0a500; animation: blink 0.6s ease-in-out infinite alternate; }
+@keyframes glow { 0%,100% { box-shadow: 0 0 4px var(--accent); } 50% { box-shadow: 0 0 10px var(--accent); } }
+@keyframes blink { to { opacity: 0.2; } }
+
+/* Auto-detect banner */
+.detect-banner {
+  background: var(--accent-light);
+  border: 1px solid #b7ddc8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px; color: var(--accent);
+  margin-bottom: 16px;
+  display: none;
+}
+.detect-banner.visible { display: flex; align-items: flex-start; gap: 8px; }
+.detect-banner b { font-weight: 600; }
+
+/* Column selector */
+.col-selector {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  display: none;
+}
+.col-selector.visible { display: block; }
+.col-selector-title { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 10px; }
+.col-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.col-chip {
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  border: 1.5px solid var(--border);
+  background: var(--bg); color: var(--muted);
+  transition: all 0.15s; user-select: none;
+}
+.col-chip:hover { border-color: var(--accent); color: var(--accent); }
+.col-chip.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+.col-chip.auto { border-color: #b7ddc8; color: var(--accent); background: var(--accent-light); }
+.col-chip.auto.selected { background: var(--accent); color: #fff; }
+
+/* Table */
+.table-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  margin-bottom: 16px;
+}
+.table-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+}
+.table-info { font-size: 13px; font-weight: 600; }
+.table-meta { font-size: 12px; color: var(--muted); }
+.search-input {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: 6px; padding: 7px 12px;
+  font-family: 'Outfit', sans-serif; font-size: 13px;
+  outline: none; width: 200px; color: var(--text);
+  transition: border-color 0.2s;
+}
+.search-input:focus { border-color: var(--accent); }
+.search-input::placeholder { color: var(--muted); }
+
+.table-scroll { overflow-x: auto; max-height: 420px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; min-width: 500px; }
+thead { position: sticky; top: 0; z-index: 2; }
+thead th {
+  background: #f9f7f4;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.5px; color: var(--muted);
+  text-align: left; padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+thead th.url-col { color: var(--accent); }
+tbody tr {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.1s;
+}
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #faf9f6; }
+tbody tr.selected { background: var(--accent-light); }
+tbody tr.no-files { opacity: 0.45; cursor: default; }
+td {
+  padding: 11px 16px; font-size: 13px;
+  max-width: 180px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+td.row-n { color: var(--muted); font-size: 11px; font-family: 'JetBrains Mono', monospace; width: 36px; }
+td.url-cell { color: var(--accent); font-size: 11px; font-family: 'JetBrains Mono', monospace; }
+td.empty-cell { color: var(--border); }
+.select-radio {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--border); margin: auto;
+  transition: all 0.15s;
+}
+tr.selected .select-radio { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
+
+/* Empty / loading */
+.empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+.empty-icon { font-size: 40px; margin-bottom: 12px; }
+.empty-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.empty-sub { font-size: 13px; }
+.spinner {
+  width: 28px; height: 28px; border: 3px solid var(--border);
+  border-top-color: var(--accent); border-radius: 50%;
+  animation: spin 0.7s linear infinite; margin: 0 auto 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Download panel */
+.dl-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: none;
+}
+.dl-panel.visible { display: block; }
+.dl-header {
+  padding: 14px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.dl-title { font-size: 14px; font-weight: 600; }
+.dl-subtitle { font-size: 12px; color: var(--muted); }
+.dl-body { padding: 16px 20px; }
+.file-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.file-card {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+}
+.file-icon { font-size: 20px; flex-shrink: 0; }
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-col-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.file-url-text { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.file-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: 6px;
+  border: 1.5px solid var(--border); background: var(--card);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; transition: all 0.15s; text-decoration: none;
+  color: var(--text);
+}
+.icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+.file-status-badge { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 10px; flex-shrink: 0; }
+.badge-ok { background: var(--accent-light); color: var(--accent); }
+.badge-err { background: var(--accent2-light); color: var(--accent2); }
+.badge-loading { background: #fff7e0; color: #b87a00; }
+
+.dl-btn {
+  width: 100%; padding: 13px;
+  background: var(--accent2); color: #fff;
+  border: none; border-radius: 8px;
+  font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 600;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.dl-btn:hover { background: #cf5a38; transform: translateY(-1px); box-shadow: var(--shadow); }
+.dl-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.no-select-hint {
+  text-align: center; padding: 40px 20px;
+  color: var(--muted); font-size: 13px;
+}
+
+.cors-warn {
+  background: #fff7e0; border: 1px solid #f0d080;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; color: #7a5c00; margin-top: 12px;
+  display: none;
+}
+.cors-warn.visible { display: block; }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; }
+  .search-input { width: 140px; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-head">
+      <div class="brand">Form<em>Files</em></div>
+      <div class="brand-sub">Google Form Response Downloader</div>
+    </div>
+
+    <!-- API Key -->
+    <div class="sidebar-section">
+      <div class="section-label">Google Sheets API Key</div>
+      <div class="input-wrap">
+        <input type="password" id="apiKey" placeholder="Paste your API key here…"/>
+        <button class="eye-btn" onclick="toggleKey()">👁</button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);">Free · Get it from Google Cloud Console</div>
+    </div>
+
+    <!-- Sheet IDs -->
+    <div class="sidebar-section">
+      <div class="section-label">Response Sheets</div>
+      <div class="sheet-list" id="sheetList">
+        <div class="sheet-item">
+          <div class="sheet-num">1</div>
+          <input type="text" placeholder="Paste Spreadsheet ID…" class="sheet-id-input"/>
+          <button class="remove-btn" onclick="removeSheet(this)">×</button>
+        </div>
+      </div>
+      <button class="add-sheet-btn" onclick="addSheet()">+ Add another sheet</button>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="sidebar-section" id="diagSection" style="display:none">
+      <div class="section-label">Connection Check</div>
+      <div id="diagList" style="display:flex;flex-direction:column;gap:8px;font-size:12px;line-height:1.5;"></div>
+    </div>
+
+    <div style="padding:0 24px 8px;display:flex;gap:8px;">
+      <button onclick="testConnection()" style="flex:1;padding:10px;background:var(--bg);color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;font-family:'Outfit',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">
+        🔍 Test First
+      </button>
+    </div>
+
+    <button class="load-btn" id="loadBtn" onclick="loadAllSheets()">
+      <span>⚡</span> Load Sheets
+    </button>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <!-- Sheet Tabs -->
+    <div class="main-header">
+      <div class="sheet-tabs" id="sheetTabs" style="display:none"></div>
+      <div class="status-bar">
+        <div class="pulse" id="pulse"></div>
+        <span id="statusMsg">Add your API key and at least one Spreadsheet ID to get started.</span>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+
+      <!-- Auto-detect banner -->
+      <div class="detect-banner" id="detectBanner">
+        <span>🔍</span>
+        <span id="detectText"></span>
+      </div>
+
+      <!-- Column selector -->
+      <div class="col-selector" id="colSelector">
+        <div class="col-selector-title">Select columns that contain file URLs (click to toggle)</div>
+        <div class="col-chips" id="colChips"></div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card" id="tableCard">
+        <div class="table-toolbar">
+          <div>
+            <div class="table-info" id="tableInfo">No sheet loaded</div>
+            <div class="table-meta" id="tableMeta"></div>
+          </div>
+          <input class="search-input" id="searchInput" placeholder="Search rows…" oninput="filterRows()" style="display:none"/>
+        </div>
+        <div class="table-scroll">
+          <div id="tableBody">
+            <div class="empty-state">
+              <div class="empty-icon">📊</div>
+              <div class="empty-title">No data yet</div>
+              <div class="empty-sub">Load a sheet to see responses here</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download panel -->
+      <div class="dl-panel" id="dlPanel">
+        <div class="dl-header">
+          <div>
+            <div class="dl-title" id="dlTitle">Selected Row Files</div>
+            <div class="dl-subtitle" id="dlSubtitle"></div>
+          </div>
+        </div>
+        <div class="dl-body">
+          <div class="file-cards" id="fileCards">
+            <div class="no-select-hint">Select a row above to see its files</div>
+          </div>
+          <button class="dl-btn" id="dlBtn" onclick="downloadAll()" disabled>
+            ↓ Download All Files
+          </button>
+          <div class="cors-warn" id="corsWarn">
+            ⚠️ Some files couldn't be downloaded directly due to browser security (CORS). Use the individual
+            <b>open ↗</b> buttons to open each file, then save manually. Google Drive links work best when opened directly.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────
+let sheets = [];        // { id, name, rows, headers, urlCols, error }
+let activeIdx = 0;
+let selectedRow = null;
+let filteredRows = [];
+
+// ─── Sidebar helpers ─────────────────────────────────────────────
+function toggleKey() {
+  const inp = document.getElementById('apiKey');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+let sheetCount = 1;
+function addSheet() {
+  sheetCount++;
+  const list = document.getElementById('sheetList');
+  const div = document.createElement('div');
+  div.className = 'sheet-item';
+  div.innerHTML = `
+    <div class="sheet-num">${sheetCount}</div>
+    <input type="text" placeholder="Paste Spreadsheet ID…" class="sheet-id-input"/>
+    <button class="remove-btn" onclick="removeSheet(this)">×</button>`;
+  list.appendChild(div);
+}
+
+function removeSheet(btn) {
+  const items = document.querySelectorAll('.sheet-item');
+  if (items.length <= 1) return;
+  btn.closest('.sheet-item').remove();
+  // Renumber
+  document.querySelectorAll('.sheet-num').forEach((el, i) => el.textContent = i + 1);
+}
+
+// ─── Status helpers ───────────────────────────────────────────────
+function setStatus(msg, state) {
+  document.getElementById('statusMsg').textContent = msg;
+  const p = document.getElementById('pulse');
+  p.className = 'pulse' + (state ? ' ' + state : '');
+}
+
+// ─── Test connection ─────────────────────────────────────────────
+async function testConnection() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const firstId = document.querySelector('.sheet-id-input')?.value.trim();
+
+  const section = document.getElementById('diagSection');
+  const list = document.getElementById('diagList');
+  section.style.display = 'block';
+
+  function check(label, status) {
+    // status: 'ok' | 'err' | 'warn' | 'loading'
+    const icons = { ok:'✅', err:'❌', warn:'⚠️', loading:'⏳' };
+    return `<div style="display:flex;gap:8px;align-items:flex-start;">
+      <span>${icons[status]}</span><span>${label}</span></div>`;
+  }
+
+  list.innerHTML = check('Checking…', 'loading');
+
+  const results = [];
+
+  // 1. API key format
+  if (!apiKey) {
+    results.push(check('API Key: not entered', 'err'));
+  } else if (!apiKey.startsWith('AIza') || apiKey.length < 30) {
+    results.push(check(`API Key format looks wrong (starts with "${apiKey.slice(0,6)}…", expected "AIza…")`, 'err'));
+  } else {
+    results.push(check('API Key format: looks correct ✓', 'ok'));
+  }
+
+  // 2. Spreadsheet ID format
+  if (!firstId) {
+    results.push(check('Spreadsheet ID: not entered', 'err'));
+  } else if (firstId.includes('docs.google.com') || firstId.includes('/')) {
+    results.push(check('Spreadsheet ID: you pasted the full URL — copy only the ID between /d/ and /edit', 'err'));
+  } else if (firstId.length < 20) {
+    results.push(check('Spreadsheet ID: too short, make sure you copied the full ID', 'err'));
+  } else {
+    results.push(check('Spreadsheet ID format: looks correct ✓', 'ok'));
+  }
+
+  list.innerHTML = results.join('');
+
+  if (!apiKey || !firstId) return;
+
+  // 3. Live API test
+  results.push(check('Testing API connection…', 'loading'));
+  list.innerHTML = results.join('');
+
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${firstId}?key=${apiKey}&fields=properties.title`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    // Remove loading
+    results.pop();
+
+    if (res.ok) {
+      results.push(check(`API connection: success! Sheet found: "${json.properties?.title}"`, 'ok'));
+      results.push(check('Ready to load — click ⚡ Load Sheets', 'ok'));
+    } else {
+      const msg = json.error?.message || '';
+      const status = res.status;
+      results.push(check(diagnoseError(status, msg), 'err'));
+
+      // Specific fix hints
+      if (status === 403 && msg.includes('not been used')) {
+        results.push(check('Fix: Go to console.cloud.google.com → APIs & Services → Library → search "Google Sheets API" → Enable', 'warn'));
+      } else if (status === 403) {
+        results.push(check('Fix: Make sure the sheet is shared → Anyone with the link → Viewer', 'warn'));
+      } else if (status === 400 || status === 404) {
+        results.push(check('Fix: Re-copy the Spreadsheet ID from the sheet URL (the part between /d/ and /edit)', 'warn'));
+      }
+    }
+  } catch(e) {
+    results.pop();
+    results.push(check('Network error — check your internet connection', 'err'));
+  }
+
+  list.innerHTML = results.join('');
+}
+
+// ─── Diagnose error reason ────────────────────────────────────────
+function diagnoseError(status, message) {
+  if (status === 400) return '❌ Invalid Spreadsheet ID — check you copied the full ID from the URL (the long string between /d/ and /edit).';
+  if (status === 403) {
+    if (message.includes('API key')) return '❌ API key is invalid or has expired. Go to Google Cloud Console → Credentials and copy the key again.';
+    if (message.includes('not been used') || message.includes('disabled')) return '❌ Google Sheets API is not enabled for this API key\'s project. Go to Google Cloud Console → APIs & Services → Library → enable Google Sheets API.';
+    if (message.includes('restricted') || message.includes('referer')) return '❌ API key has HTTP referrer restrictions. Go to Google Cloud Console → Credentials → edit your key → remove or loosen the restrictions.';
+    return '❌ Access denied (403). Make sure the sheet is shared as "Anyone with the link can view" AND the Sheets API is enabled.';
+  }
+  if (status === 404) return '❌ Spreadsheet not found (404). Double-check the Spreadsheet ID and make sure the sheet exists.';
+  if (status === 429) return '❌ Too many requests. Wait a minute and try again.';
+  return `❌ Error ${status}: ${message}`;
+}
+
+// ─── Load all sheets ─────────────────────────────────────────────
+async function loadAllSheets() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { setStatus('Please enter your API key.', 'err'); return; }
+
+  // Validate API key format
+  if (!apiKey.startsWith('AIza') || apiKey.length < 30) {
+    setStatus('⚠️ API key looks wrong — it should start with "AIza" and be ~39 characters. Double-check it.', 'err');
+    return;
+  }
+
+  const inputs = document.querySelectorAll('.sheet-id-input');
+  const ids = [...inputs].map(i => i.value.trim()).filter(Boolean);
+  if (!ids.length) { setStatus('Please enter at least one Spreadsheet ID.', 'err'); return; }
+
+  // Validate ID format
+  for (const id of ids) {
+    if (id.includes('docs.google.com') || id.includes('/')) {
+      setStatus('⚠️ It looks like you pasted the full URL instead of just the ID. Copy only the part between /d/ and /edit from the URL.', 'err');
+      return;
+    }
+    if (id.length < 20) {
+      setStatus('⚠️ Spreadsheet ID looks too short. Make sure you copied the full ID.', 'err');
+      return;
+    }
+  }
+
+  document.getElementById('loadBtn').disabled = true;
+  setStatus(`Loading ${ids.length} sheet(s)…`, 'loading');
+  showTableLoading();
+
+  sheets = [];
+  const promises = ids.map(id => loadSheet(id, apiKey));
+  await Promise.all(promises);
+
+  document.getElementById('loadBtn').disabled = false;
+
+  if (!sheets.length) { setStatus('No sheets loaded.', 'err'); return; }
+
+  const ok = sheets.filter(s => !s.error);
+  const bad = sheets.filter(s => s.error);
+
+  activeIdx = 0;
+  renderTabs();
+  switchTab(0);
+
+  if (bad.length && !ok.length) {
+    setStatus(bad[0].error, 'err');
+  } else if (bad.length) {
+    setStatus(`Loaded ${ok.length} sheet(s). ${bad.length} failed — see tab for details.`, 'err');
+  } else {
+    setStatus(`✓ Loaded ${ok.length} sheet(s) successfully.`, 'ok');
+  }
+}
+
+async function loadSheet(sheetId, apiKey) {
+  try {
+    // First get sheet metadata to find tab name
+    const metaUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}?key=${apiKey}&fields=properties.title,sheets.properties.title`;
+    const metaRes = await fetch(metaUrl);
+    if (!metaRes.ok) {
+      let errMsg = 'Failed to load';
+      try { const j = await metaRes.json(); errMsg = j.error?.message || errMsg; } catch(e) {}
+      throw new Error(diagnoseError(metaRes.status, errMsg));
+    }
+    const meta = await metaRes.json();
+
+    const sheetTitle = meta.properties?.title || sheetId.slice(0, 12) + '…';
+    const firstTab = meta.sheets?.[0]?.properties?.title || 'Sheet1';
+
+    // Load data
+    const dataUrl = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${encodeURIComponent(firstTab)}?key=${apiKey}`;
+    const dataRes = await fetch(dataUrl);
+    if (!dataRes.ok) {
+      let errMsg = 'Failed to load data';
+      try { const j = await dataRes.json(); errMsg = j.error?.message || errMsg; } catch(e) {}
+      throw new Error(diagnoseError(dataRes.status, errMsg));
+    }
+    const data = await dataRes.json();
+
+    const allRows = data.values || [];
+    if (allRows.length < 2) {
+      sheets.push({ id: sheetId, name: sheetTitle, rows: [], headers: [], urlCols: [], error: null });
+      return;
+    }
+
+    const headers = allRows[0];
+    const rows = allRows.slice(1);
+
+    // Auto-detect URL/file columns
+    const urlCols = autoDetectUrlCols(headers, rows);
+
+    sheets.push({ id: sheetId, name: sheetTitle, tab: firstTab, rows, headers, urlCols, error: null });
+  } catch(e) {
+    sheets.push({ id: sheetId, name: sheetId.slice(0, 16) + '…', rows: [], headers: [], urlCols: [], error: e.message });
+  }
+}
+
+// ─── Auto-detect URL columns ─────────────────────────────────────
+function autoDetectUrlCols(headers, rows) {
+  const urlColIndices = [];
+
+  // 1. Check header names for file/upload keywords
+  const fileKeywords = /file|upload|attachment|document|image|photo|link|url|drive|docs|sheet|pdf|img/i;
+
+  headers.forEach((h, i) => {
+    if (fileKeywords.test(h)) urlColIndices.push(i);
+  });
+
+  // 2. Also scan cell values in first 10 rows for URL patterns
+  const urlPattern = /https?:\/\/(drive\.google|docs\.google|forms\.gle|dropbox|storage|s3\.amazonaws|firebasestorage)/i;
+  const genericUrl = /^https?:\/\/.+\/.+\.(pdf|png|jpg|jpeg|gif|docx?|xlsx?|zip|mp4|mov|csv)/i;
+
+  rows.slice(0, 10).forEach(row => {
+    row.forEach((cell, i) => {
+      if (!urlColIndices.includes(i) && cell && (urlPattern.test(cell) || genericUrl.test(cell))) {
+        urlColIndices.push(i);
+      }
+    });
+  });
+
+  return [...new Set(urlColIndices)];
+}
+
+// ─── Tabs ────────────────────────────────────────────────────────
+function renderTabs() {
+  const wrap = document.getElementById('sheetTabs');
+  wrap.style.display = 'flex';
+  wrap.innerHTML = sheets.map((s, i) => `
+    <div class="sheet-tab ${i === activeIdx ? 'active' : ''}" onclick="switchTab(${i})">
+      ${s.name}
+      ${s.error
+        ? `<span class="tab-badge err">error</span>`
+        : `<span class="tab-badge">${s.rows.length}</span>`}
+    </div>`).join('');
+}
+
+function switchTab(idx) {
+  activeIdx = idx;
+  selectedRow = null;
+  renderTabs();
+  renderCurrentSheet();
+}
+
+// ─── Render current sheet ────────────────────────────────────────
+function renderCurrentSheet() {
+  const sheet = sheets[activeIdx];
+  hideDlPanel();
+
+  if (sheet.error) {
+    document.getElementById('tableBody').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">❌</div>
+        <div class="empty-title">Failed to load</div>
+        <div class="empty-sub">${sheet.error}</div>
+      </div>`;
+    document.getElementById('tableInfo').textContent = sheet.name;
+    document.getElementById('tableMeta').textContent = '';
+    document.getElementById('colSelector').classList.remove('visible');
+    document.getElementById('detectBanner').classList.remove('visible');
+    document.getElementById('searchInput').style.display = 'none';
+    return;
+  }
+
+  // Detection banner
+  const banner = document.getElementById('detectBanner');
+  const detect = document.getElementById('detectText');
+  if (sheet.urlCols.length > 0) {
+    const names = sheet.urlCols.map(c => `"${sheet.headers[c] || 'Col '+(c+1)}"`).join(', ');
+    detect.innerHTML = `<b>Auto-detected file columns:</b> ${names}. Toggle columns below to adjust.`;
+    banner.classList.add('visible');
+  } else {
+    detect.innerHTML = `<b>No file columns detected automatically.</b> Please select columns manually below.`;
+    banner.classList.add('visible');
+  }
+
+  // Column selector chips
+  renderColChips(sheet);
+
+  // Table
+  filteredRows = sheet.rows;
+  renderTable(sheet);
+  document.getElementById('searchInput').style.display = '';
+}
+
+function renderColChips(sheet) {
+  const selector = document.getElementById('colSelector');
+  const chips = document.getElementById('colChips');
+  selector.classList.add('visible');
+
+  chips.innerHTML = sheet.headers.map((h, i) => {
+    const isAuto = sheet.urlCols.includes(i);
+    const isSel = sheet.urlCols.includes(i);
+    return `<div class="col-chip ${isAuto ? 'auto' : ''} ${isSel ? 'selected' : ''}"
+      onclick="toggleCol(${i})">${h || 'Col '+(i+1)}</div>`;
+  }).join('');
+}
+
+function toggleCol(idx) {
+  const sheet = sheets[activeIdx];
+  const pos = sheet.urlCols.indexOf(idx);
+  if (pos >= 0) sheet.urlCols.splice(pos, 1);
+  else sheet.urlCols.push(idx);
+  sheet.urlCols.sort((a, b) => a - b);
+
+  renderColChips(sheet);
+  renderTable(sheet);
+  if (selectedRow !== null) showDlPanel(selectedRow);
+}
+
+function filterRows() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const sheet = sheets[activeIdx];
+  filteredRows = q
+    ? sheet.rows.filter(r => r.some(c => (c || '').toLowerCase().includes(q)))
+    : sheet.rows;
+  renderTable(sheet);
+}
+
+function renderTable(sheet) {
+  document.getElementById('tableInfo').textContent = sheet.name;
+  document.getElementById('tableMeta').textContent = `${filteredRows.length} responses`;
+
+  if (!filteredRows.length) {
+    document.getElementById('tableBody').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No rows found</div>
+        <div class="empty-sub">Try a different search</div>
+      </div>`;
+    return;
+  }
+
+  const displayCols = Math.min(sheet.headers.length, 7);
+  let html = `<table><thead><tr>
+    <th style="width:30px"></th>
+    <th style="width:36px">#</th>`;
+  for (let i = 0; i < displayCols; i++) {
+    html += `<th class="${sheet.urlCols.includes(i) ? 'url-col' : ''}">${sheet.headers[i] || 'Col '+(i+1)}${sheet.urlCols.includes(i) ? ' 🔗' : ''}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  filteredRows.forEach((row, ri) => {
+    const realIdx = sheet.rows.indexOf(row);
+    const hasFiles = sheet.urlCols.some(c => row[c] && row[c].trim());
+    const isSel = selectedRow === realIdx;
+    html += `<tr class="${isSel ? 'selected' : ''} ${!hasFiles ? 'no-files' : ''}"
+      onclick="${hasFiles ? `selectRow(${realIdx})` : ''}">
+      <td style="text-align:center"><div class="select-radio"></div></td>
+      <td class="row-n">${realIdx + 2}</td>`;
+    for (let i = 0; i < displayCols; i++) {
+      const val = row[i] || '';
+      const isUrl = sheet.urlCols.includes(i) && val;
+      html += `<td class="${isUrl ? 'url-cell' : val ? '' : 'empty-cell'}" title="${val}">${val || '—'}</td>`;
+    }
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  document.getElementById('tableBody').innerHTML = html;
+}
+
+// ─── Select row ───────────────────────────────────────────────────
+function selectRow(realIdx) {
+  selectedRow = realIdx;
+  renderTable(sheets[activeIdx]);
+  showDlPanel(realIdx);
+}
+
+// ─── Download panel ───────────────────────────────────────────────
+function showDlPanel(rowIdx) {
+  const sheet = sheets[activeIdx];
+  const row = sheet.rows[rowIdx];
+
+  const files = sheet.urlCols
+    .map(c => ({ col: c, label: sheet.headers[c] || 'Col '+(c+1), url: (row[c] || '').trim() }))
+    .filter(f => f.url);
+
+  document.getElementById('dlTitle').textContent = `Row ${rowIdx + 2} — ${files.length} file${files.length !== 1 ? 's' : ''}`;
+  document.getElementById('dlSubtitle').textContent = sheet.name;
+
+  const cards = document.getElementById('fileCards');
+  if (!files.length) {
+    cards.innerHTML = `<div class="no-select-hint">No file URLs found in this row for the selected columns.</div>`;
+    document.getElementById('dlBtn').disabled = true;
+  } else {
+    cards.innerHTML = files.map((f, i) => {
+      const isDrive = isGoogleDriveUrl(f.url);
+      const directUrl = isDrive ? getDriveDirectUrl(f.url) : f.url;
+      const typeLabel = isDrive
+        ? `<span style="font-size:10px;background:#e8f0fe;color:#1a73e8;padding:2px 7px;border-radius:10px;font-weight:600;">Google Drive</span>`
+        : `<span style="font-size:10px;background:#e8f4ee;color:#2d6a4f;padding:2px 7px;border-radius:10px;font-weight:600;">Direct File</span>`;
+      return `
+      <div class="file-card" id="fc-${i}">
+        <div class="file-icon">${fileIcon(f.url)}</div>
+        <div class="file-info">
+          <div class="file-name" style="display:flex;align-items:center;gap:8px;">
+            <span>${guessName(f.url)}</span>${typeLabel}
+          </div>
+          <div class="file-col-label">${f.label}</div>
+          <div class="file-url-text">${f.url}</div>
+        </div>
+        <div class="file-actions">
+          <a href="${f.url}" target="_blank" class="icon-btn" title="Open in new tab">↗</a>
+          ${isDrive
+            ? `<a href="${directUrl}" target="_blank" class="icon-btn" title="Open Drive file to save" style="background:#e8f0fe;border-color:#1a73e8;color:#1a73e8;">↓</a>`
+            : `<a href="${directUrl}" download class="icon-btn" title="Download directly">↓</a>`
+          }
+        </div>
+        <span class="file-status-badge" id="fs-${i}" style="display:none"></span>
+      </div>`;
+    }).join('');
+
+    // Show drive notice if any drive links exist
+    const hasDrive = files.some(f => isGoogleDriveUrl(f.url));
+    const hasDirect = files.some(f => !isGoogleDriveUrl(f.url));
+    let notice = '';
+    if (hasDrive && hasDirect) {
+      notice = `<div style="background:#fff7e0;border:1px solid #f0d080;border-radius:8px;padding:10px 14px;font-size:12px;color:#7a5c00;margin-bottom:12px;">
+        📁 <b>Google Drive files</b> will open in a new tab — press <b>Ctrl+S</b> (or ⌘S on Mac) to save each one.<br>
+        📎 <b>Direct files</b> will download automatically.
+      </div>`;
+    } else if (hasDrive) {
+      notice = `<div style="background:#e8f0fe;border:1px solid #aac4f5;border-radius:8px;padding:10px 14px;font-size:12px;color:#1a4080;margin-bottom:12px;">
+        📁 These are <b>Google Drive files</b>. They'll open in a new tab — press <b>Ctrl+S</b> (or ⌘S on Mac) to save each one. Google blocks direct browser downloads of Drive files.
+      </div>`;
+    }
+    document.getElementById('fileCards').insertAdjacentHTML('afterbegin', notice);
+    document.getElementById('dlBtn').disabled = false;
+    document.getElementById('dlBtn').textContent = hasDrive && !hasDirect
+      ? '↗ Open All Drive Files'
+      : '↓ Download All Files';
+  }
+
+  document.getElementById('corsWarn').classList.remove('visible');
+  document.getElementById('dlPanel').classList.add('visible');
+}
+
+function hideDlPanel() {
+  document.getElementById('dlPanel').classList.remove('visible');
+}
+
+// ─── Google Drive URL helpers ─────────────────────────────────────
+function isGoogleDriveUrl(url) {
+  return /drive\.google\.com|docs\.google\.com\/(?:document|spreadsheets|presentation|forms)/i.test(url);
+}
+
+function getDriveDirectUrl(url) {
+  // Convert sharing URL to direct download URL where possible
+  // drive.google.com/file/d/FILE_ID/view → drive.google.com/uc?export=download&id=FILE_ID
+  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) {
+    return `https://drive.google.com/uc?export=download&id=${fileMatch[1]}`;
+  }
+  // open?id= format
+  const openMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (openMatch) {
+    return `https://drive.google.com/uc?export=download&id=${openMatch[1]}`;
+  }
+  return url;
+}
+
+// ─── Download all ─────────────────────────────────────────────────
+async function downloadAll() {
+  const sheet = sheets[activeIdx];
+  const row = sheet.rows[selectedRow];
+  const files = sheet.urlCols
+    .map((c, i) => ({ i, col: c, label: sheet.headers[c] || 'Col '+(c+1), url: (row[c] || '').trim() }))
+    .filter(f => f.url);
+
+  document.getElementById('dlBtn').disabled = true;
+
+  for (let fi = 0; fi < files.length; fi++) {
+    const { url } = files[fi];
+    const badge = document.getElementById(`fs-${fi}`);
+    badge.style.display = '';
+
+    if (isGoogleDriveUrl(url)) {
+      // Google Drive — open in new tab, can't fetch directly
+      const directUrl = getDriveDirectUrl(url);
+      window.open(directUrl, '_blank');
+      badge.className = 'file-status-badge badge-loading';
+      badge.textContent = '↗ opened';
+      await new Promise(r => setTimeout(r, 600)); // slight delay between tabs
+    } else {
+      // Direct file — try fetch download
+      badge.className = 'file-status-badge badge-loading';
+      badge.textContent = 'downloading…';
+      try {
+        const res = await fetch(url, { mode: 'cors' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = guessName(url);
+        document.body.appendChild(a); a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        badge.className = 'file-status-badge badge-ok';
+        badge.textContent = '✓ saved';
+      } catch(e) {
+        // Fallback: open in new tab
+        window.open(url, '_blank');
+        badge.className = 'file-status-badge badge-loading';
+        badge.textContent = '↗ opened';
+      }
+    }
+  }
+
+  document.getElementById('dlBtn').disabled = false;
+}
+
+// ─── Utilities ────────────────────────────────────────────────────
+function guessName(url) {
+  try {
+    const path = new URL(url).pathname;
+    const parts = path.split('/').filter(Boolean);
+    const name = decodeURIComponent(parts[parts.length - 1] || 'file');
+    return name.length > 60 ? name.slice(0, 60) + '…' : name;
+  } catch { return 'file'; }
+}
+
+function fileIcon(url) {
+  const ext = (url.split('?')[0].split('.').pop() || '').toLowerCase();
+  const m = { pdf:'📄', png:'🖼️', jpg:'🖼️', jpeg:'🖼️', gif:'🖼️', svg:'🖼️', webp:'🖼️',
+    zip:'🗜️', rar:'🗜️', gz:'🗜️', tar:'🗜️',
+    xlsx:'📊', xls:'📊', csv:'📊', docx:'📝', doc:'📝', pptx:'📊', ppt:'📊',
+    mp4:'🎬', mov:'🎬', avi:'🎬', mp3:'🎵', wav:'🎵' };
+  if (url.includes('drive.google.com')) return '📁';
+  if (url.includes('docs.google.com')) return '📝';
+  return m[ext] || '📎';
+}
+
+function showTableLoading() {
+  document.getElementById('tableBody').innerHTML = `
+    <div class="empty-state">
+      <div class="spinner"></div>
+      <div class="empty-sub">Fetching sheet data…</div>
+    </div>`;
+  document.getElementById('sheetTabs').style.display = 'none';
+  document.getElementById('colSelector').classList.remove('visible');
+  document.getElementById('detectBanner').classList.remove('visible');
+  document.getElementById('searchInput').style.display = 'none';
+}
+</script>
+</body>
+</html>
